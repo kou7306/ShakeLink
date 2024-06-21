@@ -1,156 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- タイトル部分 -->
+    <!-- アプリ名を表示するテキストビュー -->
     <TextView
+        android:id="@+id/appNameTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="ユーザー登録"
-        android:textSize="24sp"
+        android:text="ShakeLink"
+        android:textSize="20sp"
         android:textStyle="bold"
-        android:layout_gravity="center_horizontal"
-        android:paddingBottom="16dp" />
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true" />
 
+    <!-- ユーザーアイコン -->
+    <ImageView
+        android:id="@+id/userIconImageView"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:src="@drawable/user_icon" />
+
+    <!-- マッチングしているユーザーの名前を表示するテキストビュー -->
     <TextView
+        android:id="@+id/matchingUserNameTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="名前"
-        android:textSize="16sp" />
+        android:text="Matching User"
+        android:textSize="18sp"
+        android:layout_centerInParent="true"
+        android:textAlignment="center" />
 
-    <EditText
-        android:id="@+id/editTextName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="名前を入力"
-        android:inputType="textPersonName" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="年齢"
-        android:textSize="16sp"
-        android:layout_marginTop="16dp" />
-
-    <Spinner
-        android:id="@+id/spinnerAge"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="性別"
-        android:textSize="16sp"
-        android:layout_marginTop="16dp" />
-
-    <RadioGroup
-        android:id="@+id/radioGroupGender"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <RadioButton
-            android:id="@+id/radioMale"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="男性" />
-
-        <RadioButton
-            android:id="@+id/radioFemale"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="女性" />
-
-        <RadioButton
-            android:id="@+id/radioOther"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="その他" />
-    </RadioGroup>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="所属"
-        android:textSize="16sp"
-        android:layout_marginTop="16dp" />
-
-    <EditText
-        android:id="@+id/editTextAffiliation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="所属を入力"
-        android:inputType="text" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="趣味"
-        android:textSize="16sp"
-        android:layout_marginTop="16dp" />
-
-    <EditText
-        android:id="@+id/editTextHobbies"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="趣味を入力"
-        android:inputType="text" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="SNSリンク"
-        android:textSize="16sp"
-        android:layout_marginTop="16dp" />
-
-    <EditText
-        android:id="@+id/editTextSNSLink"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="SNSリンクを入力"
-        android:inputType="textUri" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="一言"
-        android:textSize="16sp"
-        android:layout_marginTop="16dp" />
-
-    <EditText
-        android:id="@+id/editTextComment"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="一言を書く"
-        android:inputType="textMultiLine"
-        android:lines="4"
-        android:minLines="4"
-        android:gravity="top" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="MACアドレス"
-        android:textSize="16sp"
-        android:layout_marginTop="16dp" />
-
-    <EditText
-        android:id="@+id/editTextMacAddress"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="MACアドレスを入力"
-        android:inputType="text" />
-
-    <Button
-        android:id="@+id/buttonSubmit"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="登録"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="16dp" />
-</LinearLayout>
+</RelativeLayout>

@@ -1,115 +1,41 @@
 package com.example.myapplication;
 
 import android.os.Bundle;
-import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
-import android.widget.Spinner;
 import android.content.Intent;
-
+import android.os.Bundle;
+import android.widget.ImageView;
+import android.widget.TextView;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.firestore.FirebaseFirestore;
-
-import java.util.HashMap;
-import java.util.Map;
-
 public class MainActivity extends AppCompatActivity {
 
-    private EditText editTextName;
-    private Spinner spinnerAge;
-    private RadioGroup radioGroupGender;
-    private EditText editTextAffiliation;
-    private EditText editTextHobbies;
-    private EditText editTextSNSLink;
-    private EditText editTextComment;
-    private EditText editTextMacAddress;
-    private Button buttonSubmit;
-
-    private FirebaseFirestore db;
-
+    private TextView appNameTextView;
+    private ImageView userIconImageView;
+    private TextView matchingUserNameTextView;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        // Firestoreインスタンスの初期化
-        db = FirebaseFirestore.getInstance();
-
         // レイアウトからビューを取得
-        editTextName = findViewById(R.id.editTextName);
-        spinnerAge = findViewById(R.id.spinnerAge);
-        radioGroupGender = findViewById(R.id.radioGroupGender);
-        editTextAffiliation = findViewById(R.id.editTextAffiliation);
-        editTextHobbies = findViewById(R.id.editTextHobbies);
-        editTextSNSLink = findViewById(R.id.editTextSNSLink);
-        editTextComment = findViewById(R.id.editTextComment);
-        editTextMacAddress = findViewById(R.id.editTextMacAddress);
-        buttonSubmit = findViewById(R.id.buttonSubmit);
+        appNameTextView = findViewById(R.id.appNameTextView);
+        userIconImageView = findViewById(R.id.userIconImageView);
+        matchingUserNameTextView = findViewById(R.id.matchingUserNameTextView);
 
-        // 年齢の範囲を設定
-        Integer[] ages = new Integer[100];
-        for (int i = 0; i < 100; i++) {
-            ages[i] = i + 1;
-        }
+        // マッチングしているユーザーの名前を取得して表示（仮に固定値を表示しています）
+        String matchingUserName = "まだ交換したユーザーはいません"; // ここは実際に取得したユーザーの名前に置き換えてください
+        matchingUserNameTextView.setText(matchingUserName);
 
-        ArrayAdapter<Integer> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, ages);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerAge.setAdapter(adapter);
-
-        // ボタンのクリックリスナーを設定
-        buttonSubmit.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                saveDataToFirestore();
-            }
+        // ユーザーアイコンをクリックした際に、ユーザー情報画面に遷移する
+        userIconImageView.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, MyInfoActivity.class);
+            startActivity(intent);
         });
-
         // サービスの起動
         Intent bluetoothIntent = new Intent(this, BluetoothService.class);
-        startService(bluetoothIntent );
+        startService(bluetoothIntent);
         Intent DBAccessIntent = new Intent(this, DB_Access.class);
         startService(DBAccessIntent);
     }
 
-    private void saveDataToFirestore() {
-        // ユーザーの入力内容を取得
-        String name = editTextName.getText().toString();
-        int age = (int) spinnerAge.getSelectedItem();
-        int selectedGenderId = radioGroupGender.getCheckedRadioButtonId();
-        RadioButton selectedGenderRadioButton = findViewById(selectedGenderId);
-        String gender = selectedGenderRadioButton.getText().toString();
-        String affiliation = editTextAffiliation.getText().toString();
-        String hobbies = editTextHobbies.getText().toString();
-        String snsLink = editTextSNSLink.getText().toString();
-        String comment = editTextComment.getText().toString();
-        String macAddress = editTextMacAddress.getText().toString();
-
-        // Firestoreに保存するデータを作成
-        Map<String, Object> userData = new HashMap<>();
-        userData.put("name", name);
-        userData.put("age", age);
-        userData.put("gender", gender);
-        userData.put("affiliation", affiliation);
-        userData.put("hobbies", hobbies);
-        userData.put("snsLink", snsLink);
-        userData.put("comment", comment);
-        userData.put("macAddress", macAddress);
-
-        // Firestoreにデータを保存
-        db.collection("users")
-                .add(userData)
-                .addOnSuccessListener(documentReference -> {
-                    // データ保存成功
-                    // 必要に応じてユーザーに通知などを行う
-                })
-                .addOnFailureListener(e -> {
-                    // データ保存失敗
-                    // 必要に応じてユーザーに通知などを行う
-                });
-    }
 }
