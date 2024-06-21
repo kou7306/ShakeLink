@@ -1,51 +1,115 @@
 package com.example.myapplication;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.Spinner;
+import android.content.Intent;
 
-
-import androidx.activity.EdgeToEdge;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
-    private DB_Access dbAccess;
+
+    private EditText editTextName;
+    private Spinner spinnerAge;
+    private RadioGroup radioGroupGender;
+    private EditText editTextAffiliation;
+    private EditText editTextHobbies;
+    private EditText editTextSNSLink;
+    private EditText editTextComment;
+    private EditText editTextMacAddress;
+    private Button buttonSubmit;
+
+    private FirebaseFirestore db;
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
-        Intent serviceIntent = new Intent(this, DB_Access.class);
-        startService(serviceIntent);
-        // BluetoothServiceを起動するIntentを作成
-        Intent bluetoothServiceIntent = new Intent(this, BluetoothService.class);
 
-        // BluetoothServiceを開始
-        startService(bluetoothServiceIntent);
+        // Firestoreインスタンスの初期化
+        db = FirebaseFirestore.getInstance();
 
-        dbAccess = new DB_Access();
-        dbAccess.onCreate();
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
+        // レイアウトからビューを取得
+        editTextName = findViewById(R.id.editTextName);
+        spinnerAge = findViewById(R.id.spinnerAge);
+        radioGroupGender = findViewById(R.id.radioGroupGender);
+        editTextAffiliation = findViewById(R.id.editTextAffiliation);
+        editTextHobbies = findViewById(R.id.editTextHobbies);
+        editTextSNSLink = findViewById(R.id.editTextSNSLink);
+        editTextComment = findViewById(R.id.editTextComment);
+        editTextMacAddress = findViewById(R.id.editTextMacAddress);
+        buttonSubmit = findViewById(R.id.buttonSubmit);
+
+        // 年齢の範囲を設定
+        Integer[] ages = new Integer[100];
+        for (int i = 0; i < 100; i++) {
+            ages[i] = i + 1;
+        }
+
+        ArrayAdapter<Integer> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, ages);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerAge.setAdapter(adapter);
+
+        // ボタンのクリックリスナーを設定
+        buttonSubmit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                saveDataToFirestore();
+            }
         });
 
+        // サービスの起動
+        Intent bluetoothIntent = new Intent(this, BluetoothService.class);
+        startService(bluetoothIntent );
+        Intent DBAccessIntent = new Intent(this, DB_Access.class);
+        startService(DBAccessIntent);
     }
 
+    private void saveDataToFirestore() {
+        // ユーザーの入力内容を取得
+        String name = editTextName.getText().toString();
+        int age = (int) spinnerAge.getSelectedItem();
+        int selectedGenderId = radioGroupGender.getCheckedRadioButtonId();
+        RadioButton selectedGenderRadioButton = findViewById(selectedGenderId);
+        String gender = selectedGenderRadioButton.getText().toString();
+        String affiliation = editTextAffiliation.getText().toString();
+        String hobbies = editTextHobbies.getText().toString();
+        String snsLink = editTextSNSLink.getText().toString();
+        String comment = editTextComment.getText().toString();
+        String macAddress = editTextMacAddress.getText().toString();
 
-    public void onSaveButtonClick(View view) {
+        // Firestoreに保存するデータを作成
         Map<String, Object> userData = new HashMap<>();
-        userData.put("name", "John Doe");
-        userData.put("age", 30);
+        userData.put("name", name);
+        userData.put("age", age);
+        userData.put("gender", gender);
+        userData.put("affiliation", affiliation);
+        userData.put("hobbies", hobbies);
+        userData.put("snsLink", snsLink);
+        userData.put("comment", comment);
+        userData.put("macAddress", macAddress);
 
-        dbAccess.saveDataToFirestore(userData);
+        // Firestoreにデータを保存
+        db.collection("users")
+                .add(userData)
+                .addOnSuccessListener(documentReference -> {
+                    // データ保存成功
+                    // 必要に応じてユーザーに通知などを行う
+                })
+                .addOnFailureListener(e -> {
+                    // データ保存失敗
+                    // 必要に応じてユーザーに通知などを行う
+                });
     }
-
 }
