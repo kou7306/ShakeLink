@@ -1,51 +1,41 @@
 package com.example.myapplication;
 
+import android.os.Bundle;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
-
-
-import androidx.activity.EdgeToEdge;
+import android.widget.ImageView;
+import android.widget.TextView;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
-    private DB_Access dbAccess;
+
+    private TextView appNameTextView;
+    private ImageView userIconImageView;
+    private TextView matchingUserNameTextView;
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
-        Intent serviceIntent = new Intent(this, DB_Access.class);
-        startService(serviceIntent);
-        // BluetoothServiceを起動するIntentを作成
-        Intent bluetoothServiceIntent = new Intent(this, BluetoothService.class);
+        // レイアウトからビューを取得
+        appNameTextView = findViewById(R.id.appNameTextView);
+        userIconImageView = findViewById(R.id.userIconImageView);
+        matchingUserNameTextView = findViewById(R.id.matchingUserNameTextView);
 
-        // BluetoothServiceを開始
-        startService(bluetoothServiceIntent);
+        // マッチングしているユーザーの名前を取得して表示（仮に固定値を表示しています）
+        String matchingUserName = "まだ交換したユーザーはいません"; // ここは実際に取得したユーザーの名前に置き換えてください
+        matchingUserNameTextView.setText(matchingUserName);
 
-        dbAccess = new DB_Access();
-        dbAccess.onCreate();
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
+        // ユーザーアイコンをクリックした際に、ユーザー情報画面に遷移する
+        userIconImageView.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, MyInfoActivity.class);
+            startActivity(intent);
         });
-
-    }
-
-
-    public void onSaveButtonClick(View view) {
-        Map<String, Object> userData = new HashMap<>();
-        userData.put("name", "John Doe");
-        userData.put("age", 30);
-
-        dbAccess.saveDataToFirestore(userData);
+        // サービスの起動
+        Intent bluetoothIntent = new Intent(this, BluetoothService.class);
+        startService(bluetoothIntent);
+        Intent DBAccessIntent = new Intent(this, DB_Access.class);
+        startService(DBAccessIntent);
     }
 
 }

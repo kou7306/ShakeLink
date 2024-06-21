@@ -11,18 +11,29 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.util.Log;
+import java.util.ArrayList;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QuerySnapshot;
+
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.UUID;
 
 public class BluetoothService extends Service {
     private BluetoothAdapter bluetoothAdapter;
     private Context mContext; // Contextを保持するメンバ変数
+    private ArrayList<String> macAddressList = new ArrayList<>();
     // Serial Port Profile (SPP) UUID
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
@@ -72,6 +83,9 @@ public class BluetoothService extends Service {
         startBluetoothDiscovery();
     }
 
+    
+
+    // Bluetoothデバイスの検出を開始
     private void startBluetoothDiscovery() {
         IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
@@ -85,6 +99,7 @@ public class BluetoothService extends Service {
         }
     }
 
+    // Bluetoothデバイスが検出されたときの処理
     private final BroadcastReceiver bluetoothReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -93,83 +108,59 @@ public class BluetoothService extends Service {
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 if (device != null) {
-
+                    // MACアドレスを取得
                     // デバイスを検出した際にログにデバイスの名前とアドレスを出力する
                     if (ActivityCompat.checkSelfPermission(mContext, android.Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
                         Log.d("BluetoothService", "Bluetooth permission not granted");
                         return;
                     }
 
+                    String macAddress = device.getAddress();
                     Log.d("BluetoothService", "Found device:Log.d(" + device.getName() + " (" + device.getAddress() + ")");
-                    // 権限を確認してからデバイスとの接続を開始する
-                    if (context.checkSelfPermission(android.Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
-                            context.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-                            context.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 
-                        connectToDevice(device);
-                    } else {
-                        Log.e("BluetoothService", "Permissions not granted.");
-                    }
+                    // Firebaseからユーザー情報を取得
+                    getUserInfoFromFirebase(macAddress, context);
                 }
-            } else if (BluetoothDevice.ACTION_PAIRING_REQUEST.equals(action)) {
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                if (device != null) {
-                    // デバイスとのペアリングを試みる
-                    pairWithDevice(device);
-                }
-            } else if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
-                Log.d("BluetoothService", "Bluetooth discovery started.");
-            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-                Log.d("BluetoothService", "Bluetooth discovery finished.");
-            }
-        }
-
-        private void connectToDevice(BluetoothDevice device) {
-            try {
-                if (ActivityCompat.checkSelfPermission(mContext, android.Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
-                    Log.d("BluetoothService", "Bluetooth permission not granted");
-                    return;
-                }
-                BluetoothSocket socket = device.createRfcommSocketToServiceRecord(MY_UUID);
-                socket.connect();
-                receiveData(socket);
-            } catch (IOException e) {
-                Log.e("BluetoothService", "Failed to connect to device", e);
-            }
-        }
-
-        private void pairWithDevice(BluetoothDevice device) {
-            try {
-                if (ActivityCompat.checkSelfPermission(mContext, android.Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
-                    Log.d("BluetoothService", "Bluetooth permission not granted");
-                    return;
-                }
-                device.setPin("1234".getBytes()); // 仮のPINコードを設定
-                // ペアリングが成功するとBluetoothDevice.ACTION_BOND_STATE_CHANGEDアクションが送信される
-            } catch (Exception e) {
-                Log.e("BluetoothService", "Failed to pair with device", e);
-            }
-        }
-
-        private void receiveData(BluetoothSocket socket) {
-            try {
-                InputStream inputStream = socket.getInputStream();
-                byte[] buffer = new byte[1024];
-                int bytes;
-                while (true) {
-                    bytes = inputStream.read(buffer);
-                    if (bytes == -1) {
-                        break;
-                    }
-                    String receivedData = new String(buffer, 0, bytes);
-                    Log.d("BluetoothService", "Received data: " + receivedData);
-                }
-                socket.close();
-            } catch (IOException e) {
-                Log.e("BluetoothService", "Failed to receive data", e);
             }
         }
     };
+
+    // Firebaseからユーザー情報を取得するメソッド
+    private void getUserInfoFromFirebase(String macAddress, Context context) {
+        // Firebaseのデータベース参照
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        // MACアドレスに一致するドキュメントを取得するためのクエリを作成
+        db.collection("users")
+                .whereEqualTo("macAddress", macAddress)
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+                            QuerySnapshot querySnapshot = task.getResult();
+                            if (!querySnapshot.isEmpty()) {
+                                // ユーザー情報が存在する場合は新しいアクティビティにデータを渡して起動
+                                for (DocumentSnapshot document : querySnapshot.getDocuments()) {
+                                    Map<String, Object> userData = document.getData();
+                                    Intent intent = new Intent(context, UserInfoActivity.class);
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    for (Map.Entry<String, Object> entry : userData.entrySet()) {
+                                        intent.putExtra(entry.getKey(), entry.getValue().toString());
+                                    }
+                                    context.startActivity(intent);
+                                }
+                            } else {
+                                // ユーザー情報が存在しない場合はログに出力
+                                Log.d("BluetoothService", "No such document");
+                            }
+                        } else {
+                            // Firebaseからのデータ取得に失敗した場合はログに出力
+                            Log.e("BluetoothService", "Error getting document", task.getException());
+                        }
+                    }
+                });
+    }
+
 
     @Nullable
     @Override
