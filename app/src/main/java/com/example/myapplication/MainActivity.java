@@ -5,20 +5,29 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.firebase.ui.auth.AuthUI;
+import com.firebase.ui.auth.IdpResponse;
+import com.firebase.ui.auth.data.model.FirebaseAuthUIAuthenticationResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -28,6 +37,25 @@ public class MainActivity extends AppCompatActivity {
     private DB_Access dbAccess;
     private boolean isBound = false;
     private FirebaseAuth mAuth;
+
+    private final ActivityResultLauncher<Intent> signInLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                IdpResponse response = IdpResponse.fromResultIntent(result.getData());
+                // print debag
+//                Log.d("MainActivity", "signInLauncher: " + response);
+
+                if (result.getResultCode() == RESULT_OK) {
+                    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                    if (user != null && isBound) {
+                        dbAccess.setUserId(user.getUid());
+                        getUserData();
+                    }
+                } else {
+                    Toast.makeText(MainActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
+                }
+            }
+    );
 
     private ServiceConnection connection = new ServiceConnection() {
         @Override
@@ -49,7 +77,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
         nameEditText = findViewById(R.id.nameEditText);
@@ -58,14 +85,9 @@ public class MainActivity extends AppCompatActivity {
         displayTextView = findViewById(R.id.displayTextView);
 
         mAuth = FirebaseAuth.getInstance();
-        signInAnonymously();
+        signInWithGoogle();
 
-        saveButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                saveUserData();
-            }
-        });
+        saveButton.setOnClickListener(v -> saveUserData());
 
         Intent serviceIntent = new Intent(this, DB_Access.class);
         bindService(serviceIntent, connection, BIND_AUTO_CREATE);
@@ -77,41 +99,17 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void signInAnonymously() {
-        mAuth.signInAnonymously()
-                .addOnCompleteListener(this, task -> {
-                    if (task.isSuccessful()) {
-                        FirebaseUser user = mAuth.getCurrentUser();
-                        if (user != null) {
-                            // Wait until service is bound before setting userId
-                            if (isBound) {
-                                dbAccess.setUserId(user.getUid());
-                                getUserData();
-                            } else {
-                                // Retry setting userId and getting data once the service is bound
-                                ServiceConnection retryConnection = new ServiceConnection() {
-                                    @Override
-                                    public void onServiceConnected(ComponentName name, IBinder service) {
-                                        DB_Access.LocalBinder binder = (DB_Access.LocalBinder) service;
-                                        dbAccess = binder.getService();
-                                        isBound = true;
-                                        dbAccess.setUserId(user.getUid());
-                                        getUserData();
-                                    }
+    private void signInWithGoogle() {
+        List<AuthUI.IdpConfig> providers = Arrays.asList(
+                new AuthUI.IdpConfig.GoogleBuilder().build()
+        );
 
-                                    @Override
-                                    public void onServiceDisconnected(ComponentName name) {
-                                        isBound = false;
-                                    }
-                                };
-                                bindService(new Intent(this, DB_Access.class), retryConnection, BIND_AUTO_CREATE);
-                            }
-                        }
-                    } else {
-                        Toast.makeText(MainActivity.this, "Authentication failed.",
-                                Toast.LENGTH_SHORT).show();
-                    }
-                });
+        Intent signInIntent = AuthUI.getInstance()
+                .createSignInIntentBuilder()
+                .setAvailableProviders(providers)
+                .build();
+
+        signInLauncher.launch(signInIntent);
     }
 
     private void saveUserData() {
