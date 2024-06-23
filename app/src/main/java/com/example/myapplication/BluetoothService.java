@@ -11,115 +11,120 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.IBinder;
 import android.util.Log;
-import java.util.ArrayList;
-
+import android.os.Handler;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
-import java.util.UUID;
+import java.util.ArrayList;
 
 public class BluetoothService extends Service {
+    private Handler mHandler;
+    private Context mContext;
+    private static final int INTERVAL = 5000; // 5秒ごとに実行
     private BluetoothAdapter bluetoothAdapter;
-    private Context mContext; // Contextを保持するメンバ変数
-    private ArrayList<String> macAddressList = new ArrayList<>();
-    // Serial Port Profile (SPP) UUID
-    private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-
+    private boolean isDiscovering = false;
+    private FirebaseFirestore firestore;
+    private static final String TAG = "BluetoothService";
+    private ArrayList<String> macAddressList;
     @Override
     public void onCreate() {
         super.onCreate();
+        mHandler = new Handler();
         mContext = this; // Contextを取得
-
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (bluetoothAdapter == null) {
-            // デバイスがBluetoothをサポートしていない場合の処理
-            Log.e("BluetoothService", "Bluetooth is not supported on this device.");
-            stopSelf();
-            return;
-        }
+        firestore = FirebaseFirestore.getInstance();
+        // MACアドレスを格納するArrayListの初期化
+        macAddressList = new ArrayList<>();
 
-        // Bluetoothおよび位置情報の権限のチェック
-        if (!checkPermissions()) {
-            // 権限がない場合はサービスを停止
-            Log.e("BluetoothService", "Permissions not granted.");
-            stopSelf();
-            return;
-        }
+        // ブロードキャストレシーバーを登録
+        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        registerReceiver(bluetoothReceiver, filter);
+        getAllMacAddressFromFirestore();
 
-        initializeBluetooth();
+        startRepeatingTask();
     }
 
-    private boolean checkPermissions() {
-        return ContextCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        stopRepeatingTask();
+        // ブロードキャストレシーバーを解除
+        unregisterReceiver(bluetoothReceiver);
     }
 
-    private void initializeBluetooth() {
-        Log.d("BluetoothService", "start initializeBluetooth");
-        if (!bluetoothAdapter.isEnabled()) {
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            enableBtIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
-                Log.e("BluetoothService", "Permission denied for Bluetooth");
+    Runnable mStatusChecker = new Runnable() {
+        @Override
+        public void run() {
+            startBluetoothDiscovery();
+            mHandler.postDelayed(this, INTERVAL);
+        }
+    };
+
+    void startRepeatingTask() {
+        mStatusChecker.run();
+    }
+
+    void stopRepeatingTask() {
+        mHandler.removeCallbacks(mStatusChecker);
+    }
+
+    private void startBluetoothDiscovery() {
+        if (bluetoothAdapter != null && bluetoothAdapter.isEnabled()) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                Log.e(TAG, "ACCESS_FINE_LOCATION permission not granted");
                 return;
             }
-            startActivity(enableBtIntent);
-        }
 
-        // Bluetoothデバイスの検出を開始
-        startBluetoothDiscovery();
-    }
-
-    
-
-    // Bluetoothデバイスの検出を開始
-    private void startBluetoothDiscovery() {
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
-        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
-        registerReceiver(bluetoothReceiver, filter);
-
-        try {
             bluetoothAdapter.startDiscovery();
-        } catch (SecurityException e) {
-            Log.e("BluetoothService", "Permission denied for startDiscovery", e);
         }
     }
 
-    // Bluetoothデバイスが検出されたときの処理
+    private void stopBluetoothDiscovery() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Log.e(TAG, "ACCESS_FINE_LOCATION permission not granted");
+            return;
+        }
+
+        if (bluetoothAdapter != null && bluetoothAdapter.isDiscovering()) {
+            bluetoothAdapter.cancelDiscovery();
+            stopRepeatingTask();
+        }
+    }
+
     private final BroadcastReceiver bluetoothReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 if (device != null) {
-                    // MACアドレスを取得
                     // デバイスを検出した際にログにデバイスの名前とアドレスを出力する
-                    if (ActivityCompat.checkSelfPermission(mContext, android.Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
-                        Log.d("BluetoothService", "Bluetooth permission not granted");
+                    if (ContextCompat.checkSelfPermission(mContext, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                        Log.e(TAG, "ACCESS_FINE_LOCATION permission not granted");
                         return;
                     }
 
                     String macAddress = device.getAddress();
-                    Log.d("BluetoothService", "Found device:Log.d(" + device.getName() + " (" + device.getAddress() + ")");
-
-                    // Firebaseからユーザー情報を取得
-                    getUserInfoFromFirebase(macAddress, context);
+                    Log.d(TAG, "Found device: " + device.getName() + " (" + macAddress + ")");
+                    if (macAddressList.contains(macAddress)) {
+                        // MACアドレスがFirestoreに登録されている場合
+                        Log.d(TAG, "MAC address found in Firestore: " + macAddress);
+                        // Firebaseからユーザー情報を取得
+                        getUserInfoFromFirebase(macAddress, context);
+                    } else {
+                        // MACアドレスがFirestoreに登録されていない場合
+                        Log.d(TAG, "MAC address not found in Firestore: " + macAddress);
+                    }
                 }
             }
         }
@@ -142,11 +147,13 @@ public class BluetoothService extends Service {
                                 // ユーザー情報が存在する場合は新しいアクティビティにデータを渡して起動
                                 for (DocumentSnapshot document : querySnapshot.getDocuments()) {
                                     Map<String, Object> userData = document.getData();
+                                    Log.d("BluetoothService", "User data: " + userData.toString());
                                     Intent intent = new Intent(context, UserInfoActivity.class);
                                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                     for (Map.Entry<String, Object> entry : userData.entrySet()) {
                                         intent.putExtra(entry.getKey(), entry.getValue().toString());
                                     }
+                                    stopBluetoothDiscovery();
                                     context.startActivity(intent);
                                 }
                             } else {
@@ -162,22 +169,31 @@ public class BluetoothService extends Service {
     }
 
 
+    private void getAllMacAddressFromFirestore() {
+        firestore.collection("users")
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        for (DocumentSnapshot document : task.getResult()) {
+                            String macAddress = document.getString("macAddress");
+                            macAddressList.add(macAddress);
+                            Log.d(TAG, "MAC Address: " + macAddress);
+                        }
+                    } else {
+                        Log.e(TAG, "Error getting documents: ", task.getException());
+                    }
+                });
+    }
+
+    private boolean checkPermissions() {
+        return ContextCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        unregisterReceiver(bluetoothReceiver);
-        if (bluetoothAdapter != null) {
-            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
-                Log.e("BluetoothService", "Permission denied for Bluetooth");
-                return;
-            }
-            bluetoothAdapter.cancelDiscovery();
-        }
-    }
 }
+
