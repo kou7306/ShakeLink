@@ -1,6 +1,9 @@
 package com.example.myapplication;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -8,6 +11,7 @@ import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,9 +34,10 @@ public class UserRegisterActivity extends AppCompatActivity {
     private EditText editTextComment;
     private EditText editTextMacAddress;
     private Button buttonSubmit;
+    private String userId;
 
     private FirebaseFirestore db;
-    private String userId = "WVwrZzxsm0iK586xSaK1"; // 取得したユーザーIDをここに設定する
+//    private String userId = "WVwrZzxsm0iK586xSaK1"; // 取得したユーザーIDをここに設定する
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -52,6 +57,8 @@ public class UserRegisterActivity extends AppCompatActivity {
         editTextComment = findViewById(R.id.editTextComment);
         editTextMacAddress = findViewById(R.id.editTextMacAddress);
         buttonSubmit = findViewById(R.id.buttonSubmit);
+        userId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        Log.d("UserRegisterActivity", "userId: " + userId);
 
         // 年齢の範囲を設定
         Integer[] ages = new Integer[100];
@@ -139,11 +146,18 @@ public class UserRegisterActivity extends AppCompatActivity {
                 .set(userData)
                 .addOnSuccessListener(aVoid -> {
                     // データ保存成功
-                    // 必要に応じてユーザーに通知などを行う
+                    // 保存成功時にToastメッセージを表示
+                    Toast.makeText(UserRegisterActivity.this, "保存されました", Toast.LENGTH_SHORT).show();
+                    // MainActivityに戻る
+                    Intent intent = new Intent(UserRegisterActivity.this, MainActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
                 })
                 .addOnFailureListener(e -> {
                     // データ保存失敗
                     // 必要に応じてユーザーに通知などを行う
+                    Toast.makeText(UserRegisterActivity.this, "失敗しました", Toast.LENGTH_SHORT).show();
                 });
     }
 }
