@@ -1,6 +1,7 @@
 package com.example.myapplication;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.widget.Button;
@@ -26,13 +27,11 @@ public class UserInfoActivity extends AppCompatActivity {
     private TextView textViewMacAddress;
     private Button buttonSave;
     private String userId;
-    private String myId;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_info);
-        myId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         // レイアウトからビューを取得
         textViewName = findViewById(R.id.textViewName);
         textViewAge = findViewById(R.id.textViewAge);
@@ -44,6 +43,10 @@ public class UserInfoActivity extends AppCompatActivity {
         textViewMacAddress = findViewById(R.id.textViewMacAddress);
         buttonSave = findViewById(R.id.buttonSave);
 
+        // SharedPreferencesからユーザーIDを取得
+        SharedPreferences sharedPreferences = getSharedPreferences("my_preferences", MODE_PRIVATE);
+        userId = sharedPreferences.getString("USER_ID", null);
+
         // インテントからデータを取得して表示
         Intent intent = getIntent();
         textViewName.setText(intent.getStringExtra("name"));
@@ -54,7 +57,6 @@ public class UserInfoActivity extends AppCompatActivity {
         textViewSNSLink.setText(intent.getStringExtra("snsLink"));
         textViewComment.setText(intent.getStringExtra("comment"));
         textViewMacAddress.setText(intent.getStringExtra("macAddress"));
-        userId = intent.getStringExtra("userId");
         // 保存ボタンのクリックリスナーを設定
         buttonSave.setOnClickListener(view -> saveUserDataToFirebase());
     }
@@ -70,7 +72,6 @@ public class UserInfoActivity extends AppCompatActivity {
         String macAddress = textViewMacAddress.getText().toString();
 
         Map<String, Object> userData = new HashMap<>();
-        userData.put("user1", myId);
         userData.put("user", userId);
 
         // FirebaseFirestoreインスタンスを取得

@@ -1,17 +1,20 @@
 package com.example.myapplication;
 
-import android.os.Bundle;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -25,13 +28,27 @@ public class MainActivity extends AppCompatActivity {
     private ImageView userIconImageView;
     private TextView matchingUserNameTextView;
     private FirebaseFirestore db;
-    private String myId;
+    private String currentUserId;
     private List<User> userList;
     private UserAdapter adapter;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Firebaseユーザーのログイン状態をチェック
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            // ログインしていない場合、LoginActivityに遷移
+            Intent loginIntent = new Intent(this, LoginActivity.class);
+            startActivity(loginIntent);
+            finish(); // MainActivityを終了
+            return;
+        } else {
+            currentUserId = currentUser.getUid();
+        }
+
         // レイアウトからビューを取得
         appNameTextView = findViewById(R.id.appNameTextView);
         userIconImageView = findViewById(R.id.userIconImageView);
@@ -48,13 +65,12 @@ public class MainActivity extends AppCompatActivity {
         // マッチングしているユーザーの名前を取得して表示
         fetchMatchingUserNames();
 
-        myId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-
         // ユーザーアイコンをクリックした際に、ユーザー情報画面に遷移する
         userIconImageView.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, MyInfoActivity.class);
             startActivity(intent);
         });
+
         // サービスの起動
         Intent bluetoothIntent = new Intent(this, BluetoothService.class);
         startService(bluetoothIntent);
@@ -68,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
         ArrayList<String> matchedUserIds = new ArrayList<>();
 
         db.collection("matching")
-                .whereEqualTo("user1", myId)
+                .whereEqualTo("user1", currentUserId)
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
@@ -87,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
                 });
 
         db.collection("matching")
-                .whereEqualTo("user2", myId)
+                .whereEqualTo("user2", currentUserId)
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
@@ -128,4 +144,3 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 }
-
