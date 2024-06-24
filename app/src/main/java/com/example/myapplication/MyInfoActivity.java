@@ -2,6 +2,7 @@ package com.example.myapplication;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -27,6 +28,7 @@ public class MyInfoActivity extends AppCompatActivity {
     private TextView textViewComment;
     private TextView textViewMacAddress;
     private Button buttonEdit;
+    private String myId;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -58,8 +60,9 @@ public class MyInfoActivity extends AppCompatActivity {
 
     private void getUserInfoFromFirebase() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-        String macAddress = "WVwrZzxsm0iK586xSaK1";  // 実際のMACアドレスに置き換えてください
-        DocumentReference docRef = db.collection("users").document(macAddress);
+
+        myId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        DocumentReference docRef = db.collection("users").document(myId);
 
         docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
             @Override
