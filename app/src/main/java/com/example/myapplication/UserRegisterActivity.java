@@ -140,6 +140,8 @@ public class UserRegisterActivity extends AppCompatActivity {
         userData.put("comment", comment);
         userData.put("macAddress", macAddress);
 
+        Log.d("UserRegisterActivity", "userId: " + userId);
+
         // Firestoreにデータを保存
         db.collection("users")
                 .document(userId)

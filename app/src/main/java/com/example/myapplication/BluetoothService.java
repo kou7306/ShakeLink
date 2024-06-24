@@ -150,6 +150,8 @@ public class BluetoothService extends Service {
                                     Log.d("BluetoothService", "User data: " + userData.toString());
                                     Intent intent = new Intent(context, UserInfoActivity.class);
                                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    // ドキュメントIDをインテントに追加
+                                    intent.putExtra("userId", document.getId());
                                     for (Map.Entry<String, Object> entry : userData.entrySet()) {
                                         intent.putExtra(entry.getKey(), entry.getValue().toString());
                                     }

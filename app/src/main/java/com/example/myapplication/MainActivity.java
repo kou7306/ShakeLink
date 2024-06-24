@@ -3,6 +3,7 @@ package com.example.myapplication;
 import android.os.Bundle;
 import android.content.Intent;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -24,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageView userIconImageView;
     private TextView matchingUserNameTextView;
     private FirebaseFirestore db;
-    private String currentUserId = "5Da7IxIOlbOsQLBChedt"; // ここは実際のユーザーIDに置き換えてください
+    private String myId;
     private List<User> userList;
     private UserAdapter adapter;
     @Override
@@ -47,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
         // マッチングしているユーザーの名前を取得して表示
         fetchMatchingUserNames();
 
+        myId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+
         // ユーザーアイコンをクリックした際に、ユーザー情報画面に遷移する
         userIconImageView.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, MyInfoActivity.class);
@@ -55,21 +58,24 @@ public class MainActivity extends AppCompatActivity {
         // サービスの起動
         Intent bluetoothIntent = new Intent(this, BluetoothService.class);
         startService(bluetoothIntent);
-        Intent DBAccessIntent = new Intent(this, DB_Access.class);
-        startService(DBAccessIntent);
+//        Intent DBAccessIntent = new Intent(this, DB_Access.class);
+//        startService(DBAccessIntent);
     }
+
+
 
     private void fetchMatchingUserNames() {
         ArrayList<String> matchedUserIds = new ArrayList<>();
 
         db.collection("matching")
-                .whereEqualTo("user1", currentUserId)
+                .whereEqualTo("user1", myId)
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         QuerySnapshot querySnapshot = task.getResult();
                         for (QueryDocumentSnapshot document : querySnapshot) {
                             String matchedUserId = document.getString("user2");
+                            Log.d("MainActivity", "matchedUserId: " + matchedUserId);
                             if (matchedUserId != null) {
                                 matchedUserIds.add(matchedUserId);
                             }
@@ -81,13 +87,14 @@ public class MainActivity extends AppCompatActivity {
                 });
 
         db.collection("matching")
-                .whereEqualTo("user2", currentUserId)
+                .whereEqualTo("user2", myId)
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         QuerySnapshot querySnapshot = task.getResult();
                         for (QueryDocumentSnapshot document : querySnapshot) {
                             String matchedUserId = document.getString("user1");
+                            Log.d("MainActivity", "matchedUserId: " + matchedUserId);
                             if (matchedUserId != null) {
                                 matchedUserIds.add(matchedUserId);
                             }

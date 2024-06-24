@@ -6,17 +6,19 @@
     android:padding="16dp">
 
     <!-- アプリ名を表示するテキストビュー -->
+
+    <!-- ユーザーアイコン -->
     <TextView
         android:id="@+id/appNameTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="ShakeLink"
-        android:textSize="20sp"
-        android:textStyle="bold"
         android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true" />
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="10dp"
+        android:text="ShakeLink"
+        android:textSize="25sp"
+        android:textStyle="bold" />
 
-    <!-- ユーザーアイコン -->
     <ImageView
         android:id="@+id/userIconImageView"
         android:layout_width="40dp"
@@ -25,12 +27,25 @@
         android:layout_alignParentTop="true"
         android:src="@drawable/user_icon" />
 
+    <TextView
+        android:id="@+id/h1TextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="50dp"
+        android:text="知り合い一覧"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
     <!-- マッチングしているユーザーの名前を表示するテキストビュー -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_margin="40dp"
+        android:layout_marginHorizontal="40dp"
+        android:layout_marginTop="100dp"
         tools:listitem="@layout/item_user" />
 
 </RelativeLayout>

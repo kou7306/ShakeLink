@@ -2,6 +2,7 @@ package com.example.myapplication;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,12 +25,14 @@ public class UserInfoActivity extends AppCompatActivity {
     private TextView textViewComment;
     private TextView textViewMacAddress;
     private Button buttonSave;
+    private String userId;
+    private String myId;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_info);
-
+        myId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         // レイアウトからビューを取得
         textViewName = findViewById(R.id.textViewName);
         textViewAge = findViewById(R.id.textViewAge);
@@ -51,7 +54,7 @@ public class UserInfoActivity extends AppCompatActivity {
         textViewSNSLink.setText(intent.getStringExtra("snsLink"));
         textViewComment.setText(intent.getStringExtra("comment"));
         textViewMacAddress.setText(intent.getStringExtra("macAddress"));
-
+        userId = intent.getStringExtra("userId");
         // 保存ボタンのクリックリスナーを設定
         buttonSave.setOnClickListener(view -> saveUserDataToFirebase());
     }
@@ -67,14 +70,8 @@ public class UserInfoActivity extends AppCompatActivity {
         String macAddress = textViewMacAddress.getText().toString();
 
         Map<String, Object> userData = new HashMap<>();
-        userData.put("name", name);
-        userData.put("age", age);
-        userData.put("gender", gender);
-        userData.put("affiliation", affiliation);
-        userData.put("hobbies", hobbies);
-        userData.put("snsLink", snsLink);
-        userData.put("comment", comment);
-        userData.put("macAddress", macAddress);
+        userData.put("user1", myId);
+        userData.put("user", userId);
 
         // FirebaseFirestoreインスタンスを取得
         FirebaseFirestore db = FirebaseFirestore.getInstance();
