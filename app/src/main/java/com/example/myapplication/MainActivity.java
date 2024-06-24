@@ -65,8 +65,6 @@ public class MainActivity extends AppCompatActivity {
         // マッチングしているユーザーの名前を取得して表示
         fetchMatchingUserNames();
 
-        myId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-
         // ユーザーアイコンをクリックした際に、ユーザー情報画面に遷移する
         userIconImageView.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, MyInfoActivity.class);
@@ -86,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
         ArrayList<String> matchedUserIds = new ArrayList<>();
 
         db.collection("matching")
-                .whereEqualTo("user1", myId)
+                .whereEqualTo("user1", currentUserId)
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
@@ -105,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
                 });
 
         db.collection("matching")
-                .whereEqualTo("user2", myId)
+                .whereEqualTo("user2", currentUserId)
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {

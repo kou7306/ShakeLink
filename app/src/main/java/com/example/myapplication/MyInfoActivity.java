@@ -1,6 +1,7 @@
 package com.example.myapplication;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
@@ -61,9 +62,11 @@ public class MyInfoActivity extends AppCompatActivity {
     private void getUserInfoFromFirebase() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        myId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        DocumentReference docRef = db.collection("users").document(myId);
+        // SharedPreferencesからユーザーIDを取得
+        SharedPreferences sharedPreferences = getSharedPreferences("my_preferences", MODE_PRIVATE);
+        myId = sharedPreferences.getString("USER_ID", null);
 
+        DocumentReference docRef = db.collection("users").document(myId);
         docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
             @Override
             public void onComplete(@NonNull Task<DocumentSnapshot> task) {
