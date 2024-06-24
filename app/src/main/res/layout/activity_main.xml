@@ -33,4 +33,10 @@
         android:layout_margin="40dp"
         tools:listitem="@layout/item_user" />
 
+    <Button
+        android:id="@+id/login_button"
+        android:layout_width="82dp"
+        android:layout_height="wrap_content"
+        android:text="google" />
+
 </RelativeLayout>

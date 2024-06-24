@@ -49,6 +49,8 @@ public class MyInfoActivity extends AppCompatActivity {
 
         // 編集ボタンのクリックリスナーを設定
         buttonEdit.setOnClickListener(v -> {
+            // log
+            Log.d("MyInfoActivity", "Edit button clicked");
             Intent intent = new Intent(MyInfoActivity.this, UserRegisterActivity.class);
             startActivity(intent);
         });

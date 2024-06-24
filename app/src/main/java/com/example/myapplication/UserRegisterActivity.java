@@ -1,8 +1,8 @@
 package com.example.myapplication;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -37,7 +37,6 @@ public class UserRegisterActivity extends AppCompatActivity {
     private String userId;
 
     private FirebaseFirestore db;
-//    private String userId = "WVwrZzxsm0iK586xSaK1"; // 取得したユーザーIDをここに設定する
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -46,6 +45,12 @@ public class UserRegisterActivity extends AppCompatActivity {
 
         // Firestoreインスタンスの初期化
         db = FirebaseFirestore.getInstance();
+
+        // SharedPreferencesからユーザーIDを取得
+        SharedPreferences sharedPreferences = getSharedPreferences("my_preferences", MODE_PRIVATE);
+        userId = sharedPreferences.getString("USER_ID", null);
+
+        Log.d("UserRegisterActivity", "userId: " + userId);
 
         // レイアウトからビューを取得
         editTextName = findViewById(R.id.editTextName);
@@ -57,8 +62,6 @@ public class UserRegisterActivity extends AppCompatActivity {
         editTextComment = findViewById(R.id.editTextComment);
         editTextMacAddress = findViewById(R.id.editTextMacAddress);
         buttonSubmit = findViewById(R.id.buttonSubmit);
-        userId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        Log.d("UserRegisterActivity", "userId: " + userId);
 
         // 年齢の範囲を設定
         Integer[] ages = new Integer[100];

@@ -1,5 +1,6 @@
 package com.example.myapplication;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
@@ -30,6 +31,10 @@ public class UserDetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_detail);
 
+        // SharedPreferencesからユーザーIDを取得
+        SharedPreferences sharedPreferences = getSharedPreferences("my_preferences", MODE_PRIVATE);
+        userId = sharedPreferences.getString("USER_ID", null);
+
         // レイアウトからビューを取得
         textViewName = findViewById(R.id.textViewName);
         textViewAge = findViewById(R.id.textViewAge);
@@ -39,12 +44,9 @@ public class UserDetailActivity extends AppCompatActivity {
         textViewSNSLink = findViewById(R.id.textViewSNSLink);
         textViewComment = findViewById(R.id.textViewComment);
         textViewMacAddress = findViewById(R.id.textViewMacAddress);
-        userId = getIntent().getStringExtra("userId");
+
         // Firebaseからデータを取得して表示
         getUserInfoFromFirebase();
-
-
-
     }
 
     private void getUserInfoFromFirebase() {

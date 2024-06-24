@@ -1,16 +1,19 @@
 package com.example.myapplication;
 
-import android.os.Bundle;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -24,13 +27,27 @@ public class MainActivity extends AppCompatActivity {
     private ImageView userIconImageView;
     private TextView matchingUserNameTextView;
     private FirebaseFirestore db;
-    private String currentUserId = "5Da7IxIOlbOsQLBChedt"; // ここは実際のユーザーIDに置き換えてください
+    private String currentUserId;
     private List<User> userList;
     private UserAdapter adapter;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Firebaseユーザーのログイン状態をチェック
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            // ログインしていない場合、LoginActivityに遷移
+            Intent loginIntent = new Intent(this, LoginActivity.class);
+            startActivity(loginIntent);
+            finish(); // MainActivityを終了
+            return;
+        } else {
+            currentUserId = currentUser.getUid();
+        }
+
         // レイアウトからビューを取得
         appNameTextView = findViewById(R.id.appNameTextView);
         userIconImageView = findViewById(R.id.userIconImageView);
@@ -52,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, MyInfoActivity.class);
             startActivity(intent);
         });
+
         // サービスの起動
         Intent bluetoothIntent = new Intent(this, BluetoothService.class);
         startService(bluetoothIntent);
@@ -121,4 +139,3 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 }
-
