@@ -66,7 +66,7 @@ public class MyInfoActivity extends AppCompatActivity {
                     DocumentSnapshot document = task.getResult();
                     if (document.exists()) {
                         textViewName.setText("名前: " + document.getString("name"));
-                        textViewAge.setText("年齢: " + document.getString("age"));
+                        textViewAge.setText("年齢: " + document.getLong("age"));
                         textViewGender.setText("性別: " + document.getString("gender"));
                         textViewAffiliation.setText("所属: " + document.getString("affiliation"));
                         textViewHobbies.setText("趣味: " + document.getString("hobbies"));
