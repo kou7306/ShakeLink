@@ -71,7 +71,7 @@ public class UserInfoActivity extends AppCompatActivity {
 
         Map<String, Object> userData = new HashMap<>();
         userData.put("user1", myId);
-        userData.put("user", userId);
+        userData.put("user2", userId);
 
         // FirebaseFirestoreインスタンスを取得
         FirebaseFirestore db = FirebaseFirestore.getInstance();

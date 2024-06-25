@@ -45,10 +45,10 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
+        myId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         // マッチングしているユーザーの名前を取得して表示
         fetchMatchingUserNames();
 
-        myId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
 
         // ユーザーアイコンをクリックした際に、ユーザー情報画面に遷移する
         userIconImageView.setOnClickListener(v -> {
@@ -66,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void fetchMatchingUserNames() {
         ArrayList<String> matchedUserIds = new ArrayList<>();
+        Log.d("MainActivity", "myId: " + myId);
 
         db.collection("matching")
                 .whereEqualTo("user1", myId)
